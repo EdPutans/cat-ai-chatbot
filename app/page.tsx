@@ -14,10 +14,22 @@ import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
+// type ResponseMessage = Message
+
+type MessageContext = {
+  url: string;
+  title: string;
+};
 interface Message {
   role: "user" | "assistant";
   content: string;
   id?: string;
+  toolCalls?: {
+    id: string;
+    name: string;
+    output: string;
+    type: string;
+  }[];
 }
 
 export default function ChatBot() {
@@ -28,25 +40,27 @@ export default function ChatBot() {
 
   useEffect(() => {
     const storedId = localStorage.getItem("conversationId");
+
+    // console.log({storedId})
     if (storedId) {
+      console.log({ storedId });
       setConversationId(storedId);
       fetchChatHistory(storedId);
+      return;
     }
 
     // Generate a conversation ID if one doesn't exist
-    if (!conversationId) {
-      const newId = `thread-${Date.now()}-${Math.random()
-        .toString(36)
-        .substring(2, 12)}`;
-      setConversationId(newId);
-      localStorage.setItem("conversationId", newId);
-    }
-  }, [conversationId]);
+    const newId = `thread-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2, 12)}`;
+    setConversationId(newId);
+    localStorage.setItem("conversationId", newId);
+  }, []);
 
   const fetchChatHistory = async (id: string) => {
     try {
       const response = await fetch(
-        `http://192.168.16.185:3001/chat/history/${id}?showToolCalls=false`,
+        `http://192.168.16.185:3001/chat/history/${id}?showToolCalls=true`,
         {
           method: "GET",
           mode: "cors",
@@ -56,7 +70,8 @@ export default function ChatBot() {
 
       if (response.ok) {
         const data: Message[] = await response.json();
-        setMessages(data.map((msg) => msg));
+
+        setMessages(data);
       }
     } catch (error) {
       console.error("Error fetching chat history:", error);
@@ -103,6 +118,74 @@ export default function ChatBot() {
     sendMessage(input);
   };
 
+  const extractSourceFromMessage = (message: Message) => {
+    try {
+      const toolCall = message.toolCalls?.[0];
+
+      if (!toolCall) {
+        console.log("no toolcall. out", message.content);
+        return [null];
+      }
+
+      type MetadataEntry = {
+        url?: string;
+        title?: string;
+      };
+      const parsedOutput = JSON.parse(toolCall.output) as {
+        items: {
+          metadata?: MetadataEntry;
+        }[];
+      };
+
+      if (!parsedOutput?.items) {
+        console.log("no items. out", message.content);
+        return [null];
+      }
+
+      console.log("parsing......", message);
+      console.log({
+        items: parsedOutput.items.map((item: any) => item.metadata),
+      });
+      const generatedJSX = parsedOutput.items.map((item: any) => {
+        if (!item) return null;
+
+        let result = {
+          title: item.metadata?.title,
+          url: item.metadata?.url,
+        } as MetadataEntry;
+
+        if (!result.url && !result.title) return null;
+
+        return result;
+      });
+
+      console.log({ generatedJSX });
+      if (generatedJSX.length === 0) return [null];
+
+      return (
+        <div className="flex flex-col gap-2">
+          {generatedJSX.map((item, i) => {
+            if (!item) return null;
+            return (
+              <a
+                href={item.url}
+                key={i}
+                target="_blank"
+                className="text-blue-500 hover:underline"
+              >
+                {item.title}
+              </a>
+            );
+          })}
+        </div>
+      );
+
+      // return generatedJSX.length > 0 ? generatedJSX : [null];
+    } catch (e) {
+      return [null];
+    }
+  };
+
   return (
     <div className="flex flex-col items-center min-h-screen bg-gray-50 p-4">
       <div className="w-full max-w-md flex flex-col items-center gap-4">
@@ -132,11 +215,13 @@ export default function ChatBot() {
                   <div
                     className={`max-w-[80%] p-3 rounded-lg ${
                       msg.role === "user"
-                        ? "bg-blue-500 text-white rounded-tr-none"
+                        ? "bg-blue-600 text-white rounded-tr-none"
                         : "bg-gray-200 text-gray-800 rounded-tl-none"
                     }`}
                   >
                     {msg.content}
+                    <br />
+                    {extractSourceFromMessage(msg)}
                   </div>
                 </div>
               ))
