@@ -785,47 +785,49 @@ const urls = [
   "https://decodo.com/ecommerce/maturity-rankings",
   "https://decodo.com/ecommerce/methodology",
 ];
-const { fs } = require("fs");
+const fs = require("fs");
 const { XMLParser } = require("fast-xml-parser");
 const { Readability } = require("@mozilla/readability");
 var { JSDOM } = require("jsdom");
 
 async function scrapeAndSave() {
-  const urlsToScrape = [urls[0], urls[1], urls[2]];
+  // const urlsToScrape = [urls[0], urls[1], urls[2]];
+  const urlsToScrape = urls;
 
-  let results =
-    // : { metadata: { url: string; title: string }; content: string }[] =
-    [];
+  let results = [];
   for (let i = 0; i < urlsToScrape.length; i++) {
+    console.log("scraping ", urlsToScrape[i]);
     const url = urlsToScrape[i];
 
-    console.log("Fetching ", url);
-    const website = await fetch(url);
-    const webastext = await website.text();
+    const html = await fetch(url).then((res) => res.text());
 
-    const dom = new JSDOM(webastext, { url: url });
-    const reader = new Readability(dom.window.document);
-    const title = dom.window.document.querySelector("title").textContent;
+    const doc = new JSDOM(html, { url });
+    const reader = new Readability(doc.window.document, {
+      serializer: (el) => el.textContent?.content,
+    });
     const article = reader.parse();
-    // const text = dom.window.document.querySelector("body").textContent;
 
     results.push({
       metadata: {
         url: url,
-        title,
+        title: article.title,
       },
-      content: article,
+      content: article.textContent,
     });
   }
-  console.log({ results, fs });
+  console.log({ results: JSON.stringify(results, null, 2) });
 
-  fs.writeFile("scrapedData.json", JSON.stringify(results, null, 2), (err) => {
-    if (err) {
-      console.error("Error writing file:", err);
-    } else {
-      console.log("File written successfully");
+  fs.writeFile(
+    "./scrapedData.json",
+    JSON.stringify(results, null, 2),
+    (err) => {
+      if (err) {
+        console.error("Error writing file:", err);
+      } else {
+        console.log("File written successfully");
+      }
     }
-  });
+  );
   console.log("Scraping completed");
 }
 
