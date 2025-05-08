@@ -17,9 +17,8 @@ import { useEffect, useState } from "react";
 interface Message {
   role: "user" | "assistant";
   content: string;
+  id?: string;
 }
-
-type ChatHistory = Message[];
 
 export default function ChatBot() {
   const [input, setInput] = useState("");
@@ -56,7 +55,7 @@ export default function ChatBot() {
       );
 
       if (response.ok) {
-        const data: ChatHistory = await response.json();
+        const data: Message[] = await response.json();
         setMessages(data.map((msg) => msg));
       }
     } catch (error) {
