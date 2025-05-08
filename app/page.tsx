@@ -41,9 +41,7 @@ export default function ChatBot() {
   useEffect(() => {
     const storedId = localStorage.getItem("conversationId");
 
-    // console.log({storedId})
     if (storedId) {
-      console.log({ storedId });
       setConversationId(storedId);
       fetchChatHistory(storedId);
       return;
@@ -101,7 +99,6 @@ export default function ChatBot() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log({ data });
         // Fetch updated chat history after sending message
         await fetchChatHistory(conversationId);
       }
@@ -146,7 +143,7 @@ export default function ChatBot() {
       console.log({
         items: parsedOutput.items.map((item: any) => item.metadata),
       });
-      const generatedJSX = parsedOutput.items.map((item: any) => {
+      const sourceEntries = parsedOutput.items.map((item: any) => {
         if (!item) return null;
 
         let result = {
@@ -159,19 +156,33 @@ export default function ChatBot() {
         return result;
       });
 
-      console.log({ generatedJSX });
-      if (generatedJSX.length === 0) return [null];
+      if (sourceEntries.length === 0) return [null];
+
+      const sources =
+        sourceEntries.reduce(
+          (acc: MessageContext[], item: MessageContext | null) => {
+            if (item) {
+              const existing = acc.find((i) => i.url === item.url);
+              if (!existing) {
+                acc.push(item);
+              }
+            }
+
+            return acc;
+          },
+          [] as MessageContext[]
+        ) || ([] as MessageContext[]);
 
       return (
-        <div className="flex flex-col gap-2">
-          {generatedJSX.map((item, i) => {
+        <div className="flex flex-col">
+          {sources.map((item, i) => {
             if (!item) return null;
             return (
               <a
                 href={item.url}
                 key={i}
                 target="_blank"
-                className="text-blue-500 hover:underline"
+                className="text-blue-500 hover:underline text-xs"
               >
                 {item.title}
               </a>
@@ -188,7 +199,7 @@ export default function ChatBot() {
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-gray-50 p-4">
-      <div className="w-full max-w-md flex flex-col items-center gap-4">
+      <div className="w-full max-w-xl flex flex-col items-center gap-4">
         <div className="w-24 h-24 mt-8 -mb-10">
           <Image src={"/catgpt.png"} alt="" width={120} height={120} />
         </div>
