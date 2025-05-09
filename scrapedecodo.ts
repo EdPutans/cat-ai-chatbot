@@ -987,11 +987,12 @@ const urls2 = [
 ];
 const fs = require("fs");
 const { Readability } = require("@mozilla/readability");
+// import { Readability } from "@mozilla/readability";
 var { JSDOM } = require("jsdom");
 
 async function scrapeAndSave() {
-  // const urlsToScrape = [urls[0], urls[1], urls[2]];
-  const urlsToScrape = urls2;
+  const urlsToScrape = [urls[0], urls[1], urls[2]];
+  // const urlsToScrape = urls;
 
   let results = [];
   for (let i = 0; i < urlsToScrape.length; i++) {
@@ -1002,31 +1003,28 @@ async function scrapeAndSave() {
 
     const doc = new JSDOM(html, { url });
     const reader = new Readability(doc.window.document, {
-      serializer: (el) => el.textContent?.content,
+      debug: true,
     });
+
     const article = reader.parse();
 
     results.push({
       metadata: {
         url: url,
-        title: article.title,
+        title: article?.title,
       },
-      content: article.textContent,
+      content: article?.textContent,
     });
   }
-  console.log({ results: JSON.stringify(results, null, 2) });
+  // console.log({ results: JSON.stringify(results, null, 2) });
 
-  fs.writeFile(
-    "./scrapedHelpdocs.json",
-    JSON.stringify(results, null, 2),
-    (err) => {
-      if (err) {
-        console.error("Error writing file:", err);
-      } else {
-        console.log("File written successfully");
-      }
+  fs.writeFile("./scrapedWeb.json", JSON.stringify(results, null, 2), (err) => {
+    if (err) {
+      console.error("Error writing file:", err);
+    } else {
+      console.log("File written successfully");
     }
-  );
+  });
   console.log("Scraping completed");
 }
 

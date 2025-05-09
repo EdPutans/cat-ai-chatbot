@@ -1,12 +1,11 @@
 import { MetadataEntry } from "@/app/page";
-import React from "react";
 
 type Props = {
   sources: MetadataEntry[];
 };
 
 const SourceList = ({ sources }: Props) => {
-  const [isUnfolded, setIsUnfolded] = React.useState(false);
+  // const [isUnfolded, setIsUnfolded] = React.useState(false);
 
   if (!sources || sources.length === 0) return null;
 
@@ -15,7 +14,7 @@ const SourceList = ({ sources }: Props) => {
       <span className="text-xs text-gray-500 my-2">Sources:</span>
 
       {sources
-        .slice(isUnfolded ? 0 : 0, isUnfolded ? sources.length : 3)
+        // .slice(isUnfolded ? 0 : 0, isUnfolded ? sources.length : 3)
         .map((item, i) => {
           // .map((item, i) => {
           if (!item) return null;
@@ -30,12 +29,12 @@ const SourceList = ({ sources }: Props) => {
             </a>
           );
         })}
-      <button
+      {/* <button
         className="text-blue-500  underline text-xs"
         onClick={() => setIsUnfolded((prev) => !prev)}
-      >
-        {isUnfolded && sources.length > 3 ? "Show less" : "Show more"}
-      </button>
+      > */}
+      {/* {isUnfolded && sources.length > 3 ? "Show less" : "Show more"}  */}
+      {/* </button> */}
     </div>
   );
 };
