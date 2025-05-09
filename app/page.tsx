@@ -2,6 +2,7 @@
 
 import type React from "react";
 
+import SourceList from "@/components/SourceList";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,16 +11,16 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { hostIp } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
-// type ResponseMessage = Message
-
-type MessageContext = {
-  url: string;
-  title: string;
+export type MetadataEntry = {
+  url?: string;
+  title?: string;
 };
+
 interface Message {
   role: "user" | "assistant";
   content: string;
@@ -58,7 +59,7 @@ export default function ChatBot() {
   const fetchChatHistory = async (id: string) => {
     try {
       const response = await fetch(
-        `http://192.168.16.185:3001/chat/history/${id}?showToolCalls=true`,
+        `${hostIp}/chat/history/${id}?showToolCalls=true`,
         {
           method: "GET",
           mode: "cors",
@@ -85,7 +86,7 @@ export default function ChatBot() {
     setMessages((prev) => [...prev, { role: "user", content: message }]);
 
     try {
-      const response = await fetch("http://192.168.16.185:3001/chat", {
+      const response = await fetch(`${hostIp}/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -104,6 +105,7 @@ export default function ChatBot() {
       }
     } catch (error) {
       console.error("Error sending message:", error);
+      setError("Error sending message. Please try again.");
     } finally {
       setIsLoading(false);
       setInput("");
@@ -124,31 +126,26 @@ export default function ChatBot() {
         return [null];
       }
 
-      type MetadataEntry = {
-        url?: string;
-        title?: string;
-      };
       const parsedOutput = JSON.parse(toolCall.output) as {
-        items: {
-          metadata?: MetadataEntry;
-        }[];
+        context: MetadataEntry[];
       };
 
-      if (!parsedOutput?.items) {
-        console.log("no items. out", message.content);
+      if (!parsedOutput?.context) {
+        console.log("no context. out", message.content);
         return [null];
       }
 
       console.log("parsing......", message);
       console.log({
-        items: parsedOutput.items.map((item: any) => item.metadata),
+        context: parsedOutput.context.map((item: any) => item.metadata),
       });
-      const sourceEntries = parsedOutput.items.map((item: any) => {
+
+      const sourceEntries = parsedOutput.context.map((item: any) => {
         if (!item) return null;
 
         let result = {
-          title: item.metadata?.title,
-          url: item.metadata?.url,
+          title: item?.title,
+          url: item?.url,
         } as MetadataEntry;
 
         if (!result.url && !result.title) return null;
@@ -160,7 +157,9 @@ export default function ChatBot() {
 
       const sources =
         sourceEntries.reduce(
-          (acc: MessageContext[], item: MessageContext | null) => {
+          (acc: MetadataEntry[], item: MetadataEntry | null) => {
+            if (!item) return acc;
+
             if (item) {
               const existing = acc.find((i) => i.url === item.url);
               if (!existing) {
@@ -170,28 +169,12 @@ export default function ChatBot() {
 
             return acc;
           },
-          [] as MessageContext[]
-        ) || ([] as MessageContext[]);
+          []
+        ) || [];
 
-      return (
-        <div className="flex flex-col">
-          {sources.map((item, i) => {
-            if (!item) return null;
-            return (
-              <a
-                href={item.url}
-                key={i}
-                target="_blank"
-                className="text-blue-500 hover:underline text-xs"
-              >
-                {item.title}
-              </a>
-            );
-          })}
-        </div>
-      );
+      if (!sources.length) return [null];
 
-      // return generatedJSX.length > 0 ? generatedJSX : [null];
+      return <SourceList sources={sources} />;
     } catch (e) {
       return [null];
     }
@@ -207,13 +190,14 @@ export default function ChatBot() {
         <h1 className="text-2xl font-bold text-center">CatGPT</h1>
 
         <Card className="w-full">
-          <CardHeader className="text-sm text-gray-500">
+          <CardHeader className="text-xs italic text-gray-500">
             Conversation ID: {conversationId}
           </CardHeader>
           <CardContent className="h-[60vh] overflow-y-auto space-y-4 p-4">
             {messages.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-gray-400">
-                Start a conversation with the AI cat!
+              <div className="flex items-center text-center justify-center h-full text-gray-400">
+                This is the start of your conversation with the feline
+                assistant.
               </div>
             ) : (
               messages.map((msg, index) => (
