@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import Markdown from "react-markdown";
 
 import SourceList from "@/components/SourceList";
 import { Button } from "@/components/ui/button";
@@ -214,7 +215,8 @@ export default function ChatBot() {
                         : "bg-gray-200 text-gray-800 rounded-tl-none"
                     }`}
                   >
-                    {msg.content}
+                    <Markdown>{msg.content}</Markdown>
+
                     <br />
                     {extractSourceFromMessage(msg)}
                   </div>

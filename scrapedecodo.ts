@@ -989,6 +989,14 @@ const fs = require("fs");
 const { Readability } = require("@mozilla/readability");
 // import { Readability } from "@mozilla/readability";
 var { JSDOM } = require("jsdom");
+function insertSpaces(text) {
+  return text
+    .replace(/([a-z])([A-Z])/g, "$1 $2") // lowerCaseUpperCase → separate
+    .replace(/([A-Za-z])(\d)/g, "$1 $2") // letterNumber → separate
+    .replace(/(\d)([A-Za-z])/g, "$1 $2") // numberLetter → separate
+    .replace(/\s{2,}/g, " ") // multiple spaces → single space
+    .trim();
+}
 
 async function scrapeAndSave() {
   const urlsToScrape = [urls[0], urls[1], urls[2]];
@@ -1007,16 +1015,66 @@ async function scrapeAndSave() {
     });
 
     const article = reader.parse();
+    const cleanedText = insertSpaces(article?.textContent || "");
 
     results.push({
       metadata: {
         url: url,
         title: article?.title,
       },
-      content: article?.textContent,
+      content: cleanedText,
     });
   }
-  // console.log({ results: JSON.stringify(results, null, 2) });
+
+  fs.writeFile(
+    "./scrapedWebold.json",
+    JSON.stringify(results, null, 2),
+    (err) => {
+      if (err) {
+        console.error("Error writing file:", err);
+      } else {
+        console.log("File written successfully");
+      }
+    }
+  );
+
+  console.log("Scraping completed");
+}
+
+// scrapeAndSave();
+const puppeteer = require("puppeteer");
+
+async function scrapeAndSavePuppeteer() {
+  const urlsToScrape = urls;
+  // const urlsToScrape = [urls[0], urls[1], urls[2]];
+
+  let results = [];
+
+  for (let i = 0; i < urlsToScrape.length; i++) {
+    console.log("scraping ", urlsToScrape[i]);
+    const url = urlsToScrape[i];
+
+    // Launch browser and open a new page
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.goto(url);
+
+    // Extract the content using innerText or a selector
+    const content = await page.evaluate(() => {
+      const article = document.querySelector("body"); // Or any specific selector
+      return article ? article.innerText : "";
+    });
+
+    results.push({
+      metadata: {
+        url: url,
+        title: await page.title(),
+      },
+      content: content.trim(),
+    });
+
+    await browser.close();
+  }
 
   fs.writeFile("./scrapedWeb.json", JSON.stringify(results, null, 2), (err) => {
     if (err) {
@@ -1025,7 +1083,8 @@ async function scrapeAndSave() {
       console.log("File written successfully");
     }
   });
+
   console.log("Scraping completed");
 }
 
-scrapeAndSave();
+scrapeAndSavePuppeteer();
