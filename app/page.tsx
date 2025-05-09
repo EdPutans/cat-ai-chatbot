@@ -184,11 +184,11 @@ export default function ChatBot() {
   return (
     <div className="flex flex-col items-center min-h-screen bg-gray-50 p-4">
       <div className="w-full max-w-xl flex flex-col items-center gap-4">
-        <div className="w-24 h-24 mt-8 -mb-10">
+        <div className="w-24 h-24 mt-8 ">
           <Image src={"/catgpt.png"} alt="" width={120} height={120} />
         </div>
 
-        <h1 className="text-2xl font-bold text-center">CatGPT</h1>
+        {/* <h1 className="text-2xl font-bold text-center">CatGPT</h1> */}
 
         <Card className="w-full">
           <CardHeader className="text-xs italic text-gray-500">
