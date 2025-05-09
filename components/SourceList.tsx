@@ -13,22 +13,25 @@ const SourceList = ({ sources }: Props) => {
     <div className="flex flex-col align-start">
       <span className="text-xs text-gray-500 my-2">Sources:</span>
 
-      {sources
-        // .slice(isUnfolded ? 0 : 0, isUnfolded ? sources.length : 3)
-        .map((item, i) => {
-          // .map((item, i) => {
-          if (!item) return null;
-          return (
-            <a
-              href={item.url}
-              key={i}
-              target="_blank"
-              className="text-blue-500 hover:underline text-xs"
-            >
-              {item.title}
-            </a>
-          );
-        })}
+      {sources.map((item, i) => {
+        if (!item) return null;
+        return (
+          <a
+            href={item.url}
+            key={i}
+            target="_blank"
+            className="text-blue-500 hover:underline text-xs"
+          >
+            {item.title} (
+            {item?.url
+              ?.replace("https://", "")
+              .replace("http://", "")
+              .replace("www.", "")
+              .split("/")[0] || ""}
+            )
+          </a>
+        );
+      })}
       {/* <button
         className="text-blue-500  underline text-xs"
         onClick={() => setIsUnfolded((prev) => !prev)}
